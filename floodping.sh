@@ -26,7 +26,6 @@ export -f loading
 
 if [ -z "${3}" ] ; then
         echo "$0 <IP_ADDR> <TEMPS> <NB_CHILD>"
-        echo "TEMPS: secondes"
         exit 1
 fi
 
