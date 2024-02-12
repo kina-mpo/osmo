@@ -9,6 +9,7 @@ NC_MAX=0
 
 #################################### Functions
 function helpme {
+	echo "/!\\ LAUNCH AS ROOT /!\\"
 	echo "$0 <CLIENT|SERVER> <PORT> [NB_CHILDS] [SRV_IP]"
 	echo -e "\n\nEXAMPLE :"
 	echo "$0 SERVER 10000"
@@ -57,6 +58,7 @@ function loading {
 #################################### Initialisation
 export -f loading
 trap stop_all INT
+if [ "${USER}" != "root" ] ; then helpme ; fi
 if [ "${1}" == "SERVER" ] ; then
 	if [ -n "${2}" ] ; then
 		MODE="SERVER"
