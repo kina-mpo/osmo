@@ -3,32 +3,28 @@
 #################################### Variables
 LOCKFILE_SRV="/tmp/tcpflood_srv.lock"
 LOCKFILE_CLI="/tmp/tcpflood_cli.lock"
+LOGFILE_SRV="/tmp/tcpflood_srv.log"
+LOGFILE_CLI="/tmp/tcpflood_cli.log"
 NC_MAX=0
 
 #################################### Functions
 function helpme {
-	echo "$0 <CLIENT|SERVER> <PORT-RANGE> [SRV_IP]"
-	echo -e "\n\nEXAMPLES :"
-	echo "$0 SERVER 10000-20000"
-	echo "$0 CLIENT 10000-20000 192.168.1.1"
-	echo ""
+	echo "$0 <CLIENT|SERVER> <PORT> [NB_CHILDS] [SRV_IP]"
+	echo -e "\n\nEXAMPLE :"
 	echo "$0 SERVER 10000"
-	echo "$0 CLIENT 10000 192.168.1.1"
+	echo "$0 CLIENT 10000 100 192.168.1.1"
 	exit 1
 }
 
 function start_server {
 	touch ${LOCKFILE_SRV}
-	for PORT in $( seq ${FIRST} ${LAST}) ; do
-		netcat -4 -n -l ${PORT} &
-	done
-	echo "LISTEN        : $(netstat -tlpn | grep 'netcat' | awk '{print $5}' | uniq)"
+	netcat -4 -n -l ${1} &
 }
 
 function start_client {
 	touch ${LOCKFILE_CLI}
-	for PORT in $( seq ${FIRST} ${LAST}) ; do
-		netcat -4 -n ${IP_SRV} ${PORT} &
+	for CHILD in $( seq 1 ${1}) ; do
+		netcat -4 -n ${2} ${3} &
 	done
 }
 
@@ -64,33 +60,20 @@ trap stop_all INT
 if [ "${1}" == "SERVER" ] ; then
 	if [ -n "${2}" ] ; then
 		MODE="SERVER"
-		FIRST="$(echo ${2} | awk -F'-' '{print $1}')"
-		LAST="$(echo ${2} | awk -F'-' '{print $2}')"
-		if [ -z "${LAST}" ] ; then LAST="${FIRST}" ; fi
 		echo "-------------------------------------------"
-		echo "MODE          : ${MODE}"
-		echo "FIRST_PORT    : ${FIRST}"
-		echo "LAST_PORT     : ${LAST}"
-		start_server
+		echo "MODE          : SERVER"
+		echo "LISTEN        : 0.0.0.0:${2}"
+		start_server ${2}
 	else
 		helpme
 	fi
 elif [ "${1}" == "CLIENT" ] ; then
-	if [ -n "${2}" ] ; then
-		MODE="CLIENT"
-		FIRST="$(echo ${2} | awk -F'-' '{print $1}')"
-		LAST="$(echo ${2} | awk -F'-' '{print $2}')"
-		if [ -z "${LAST}" ] ; then LAST="${FIRST}" ; fi
+	if [ -n "${2}" ] && [ -n ${3} ] && [ -n ${4} ] ; then
 		echo "-------------------------------------------"
-		echo "MODE          : ${MODE}"
-		echo "FIRST_PORT    : ${FIRST}"
-		echo "LAST_PORT     : ${LAST}"
-		if [ -n "${3}" ] ; then
-			IP_SRV="${3}"
-			start_client
-		else
-			helpme
-		fi
+		echo "MODE          : CLIENT"
+		echo "SERVER        : ${4}:${2}"
+		echo "NB_CHILDS     : ${3}"
+		start_client ${3} ${4} ${2}
 	else
 		helpme
 	fi
